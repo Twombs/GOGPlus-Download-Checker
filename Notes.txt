@@ -1,0 +1,54 @@
+﻿First off, let me say I hope this works well for you, but please read my Disclaimer below.
+
+You can install (copy) my program (GOGDownload Checker.exe) wherever you like, but 'InnoExtract' and '7-Zip' and possibly 'UnRAR' need to share the same location.
+
+The best way to use the program, is to create a shortcut to it, and place that shortcut either on your Desktop or wherever you download your GOG games files too. That said, the floating dropbox does give you a good degree of flexibility, and it remembers its screen location.
+
+REQUIREMENTS
+------------
+InnoExtract, required for testing the EXE (and companion BIN) files, can be found here - https://constexpr.org/innoextract/
+(https://constexpr.org/innoextract/files/innoextract-1.8-windows.zip)
+The 'innoextract.exe' file and any dependencies, need to share the same folder as my program.
+
+7-Zip can be obtained from here - https://www.7-zip.org/
+(https://www.7-zip.org/a/7z1900.exe)
+If you don't wish to install it, you can grab the 7-Zip Extra: standalone console version, from here - https://www.7-zip.org/download.html
+(https://www.7-zip.org/a/7z1900-extra.7z)
+If you do install it, you will still need to copy the necessary files to the '7-Zip' folder inside my program's folder.
+
+And if InnoExtract requires a more recent version for some files, UnRAR can be found here - https://www.rarlab.com/rar_add.htm
+(https://www.rarlab.com/rar/unrarw32.exe)
+
+PLEASE NOTE - My program was built and tested on Windows 7 (32 Bit).
+
+
+DISCLAIMER
+----------
+While I have gone to considerable trouble to make this program work correctly and not cause any untoward issues for users, I promise nothing, nor can you hold me responsible if you go ahead and use it. You use at your own risk.
+
+If your Anti-Virus program reports an issue, please check my program online with Virus Total, as they run the latest updated versions of most AV programs. The programming language I use (AutoIt), often gets falsely flagged by some AV.
+
+Cheers, Enjoy!
+Timboli
+
+
+SOME OF THE ERROR MESSAGES THAT COULD BE RETURNED by InnoExtract TESTING
+------------------------------------------------------------------------
+
+Done.
+Not a supported Inno Setup installer!
+Done with 1 error.
+
+
+Stream error while extracting files!
+ └─ error reason: zlib error: iostream error
+If you are sure the setup file is not corrupted, consider
+filing a bug report at http://innoextract.constexpr.org/issues
+Done with 1 error.
+
+
+Warning: Checksum mismatch:
++- actual:   SHA-1 48b430840d9398452052cfa0822e673897b6cbbe
++- expected: SHA-1 2c2dd16ce66b3da5517e3465e57c63d36735fbd4
+Integrity test failed!
+Done with 1 error and 1 warning.
