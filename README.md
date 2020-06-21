@@ -5,6 +5,6 @@ A frontend program and GUI plus dropbox, that uses innoextract.exe (for EXE and 
 
 This is a partial replacement for the now disabled GOG Downloader, and to be used in that context with the browser downloads from the GOG site (user's game library), either with or without a third party downloading program. I use and recommend Free Download Manager 5.
 
-Primary file types supported are - EXE (+ BIN), ZIP, 7Z, RAR, BZ2, GZ, PK4, SH, PDF.
+Primary file types supported are - EXE (+ BIN), ZIP, 7Z, RAR, BZ2, GZ, PK4, MSI, SH, PDF.
 
 See the file Notes.txt for my DISCLAIMER, and for links to required third party files and some instructions etc.
