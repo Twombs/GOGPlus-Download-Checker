@@ -41,7 +41,19 @@ Global $textcol, $timestamp, $top, $tot, $unrar, $update, $version, $zipcheck
 Global $gaDropFiles[1], $hWnd, $lParam, $msgID, $wParam
 ; NOTE - If using older AutoIt, then $WM_DROPFILES = 0x233 may need to be declared.
 
-$7zip = @ScriptDir & "\7-Zip\7za.exe"
+$7zip = @ScriptDir & "\7-Zip\7z.exe"
+If Not FileExists($7zip) Then
+	$7zip = @ScriptDir & "\7-Zip\7za.exe"
+	If FileExists($7zip) Then
+		MsgBox(262192, "7-Zip Error", "Earlier versions of this program used '7za.exe'," _
+			& @LF & "which is no longer supported." & @LF _
+			& @LF & "The current version uses '7z.exe' instead, as it" _
+			& @LF & "has better support for EXE files." & @LF _
+			& @LF & "Please update your version of 7-Zip.", 0)
+	EndIf
+	$7zip = @ScriptDir & "\7-Zip\7z.exe"
+EndIf
+
 $foldpdf = @ScriptDir & "\QPDF"
 $foldrar = @ScriptDir & "\UnRAR"
 $foldzip = @ScriptDir & "\7-Zip"
@@ -55,7 +67,7 @@ $qpdf = @ScriptDir & "\QPDF\bin\qpdf.exe"
 $target = @LF & "Drag && Drop" & @LF & "Downloaded" & @LF & "Game Files" & @LF & "HERE"
 $unrar = @ScriptDir & "\UnRAR\UnRAR.exe"
 $update = " June update"
-$version = "v1.8"
+$version = "v2.0"
 
 If Not FileExists($foldpdf) Then DirCreate($foldpdf)
 If Not FileExists($foldrar) Then DirCreate($foldrar)
@@ -137,12 +149,30 @@ While True
 			ExitLoop
 		Case $msg = $GUI_EVENT_DROPPED
 			;MsgBox(262208, "Drop Result", @GUI_DragFile & " was dropped on " & @GUI_DropId, 0, $DropboxGUI)
+			Local $f, $file, $files, $srcfld
 			$cnt = UBound($gaDropFiles)
 			If $cnt = 1 Then
 				$srcfle = @GUI_DragFile
 				$atts = FileGetAttrib($srcfle)
 				If StringInStr($atts, "D") > 0 Then
-					MsgBox(262192, "Drop Error", "Folders are not supported!", 0, $DropboxGUI)
+					;MsgBox(262192, "Drop Error", "Folders are not supported!", 0, $DropboxGUI)
+					$srcfld = $srcfle
+					$files = _FileListToArrayRec($srcfld, "*", $FLTAR_FILES, $FLTAR_RECUR, $FLTAR_SORT, $FLTAR_RELPATH)
+					If @error <> 1 Then
+						For $f = 1 To $files[0]
+							$file = $files[$f]
+							$srcfle = $srcfld & "\" & $file
+							_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
+							If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
+								Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
+								AddFileToList()
+							EndIf
+						Next
+					ElseIf @extended = 9 Then
+						MsgBox(262192, "Source Error", "No files found!", 0, $DropboxGUI)
+					Else
+						MsgBox(262192, "Source Error", "Files couldn't be returned!", 0, $DropboxGUI)
+					EndIf
 				Else
 					AddFileToList()
 				EndIf
@@ -151,7 +181,25 @@ While True
 					$srcfle = $gaDropFiles[$g]
 					$atts = FileGetAttrib($srcfle)
 					If StringInStr($atts, "D") > 0 Then
-						MsgBox(262192, "Drop Error", "Folders are not supported!", 2, $DropboxGUI)
+						;MsgBox(262192, "Drop Error", "Folders are not supported!", 2, $DropboxGUI)
+						;MsgBox(262192, "Drop Error", "Multiple Folders are not supported!", 2, $DropboxGUI)
+						$srcfld = $srcfle
+						$files = _FileListToArrayRec($srcfld, "*", $FLTAR_FILES, $FLTAR_RECUR, $FLTAR_SORT, $FLTAR_RELPATH)
+						If @error <> 1 Then
+							For $f = 1 To $files[0]
+								$file = $files[$f]
+								$srcfle = $srcfld & "\" & $file
+								_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
+								If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
+									Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
+									AddFileToList()
+								EndIf
+							Next
+						ElseIf @extended = 9 Then
+							MsgBox(262192, "Source Error", "No files found!", 2, $DropboxGUI)
+						Else
+							MsgBox(262192, "Source Error", "Files couldn't be returned!", 2, $DropboxGUI)
+						EndIf
 					Else
 						AddFileToList()
 					EndIf
@@ -170,7 +218,7 @@ While True
 					$zipcheck = 1
 				Else
 					$zipcheck = ""
-					;MsgBox(262192, "Program Error", "7-Zip (7za.exe) is Required for ZIP files and is missing!", 0, $DropboxGUI)
+					;MsgBox(262192, "Program Error", "7-Zip (7z.exe) is Required for ZIP files and is missing!", 0, $DropboxGUI)
 				EndIf
 				If FileExists($qpdf) Then
 					$pdfcheck = 1
@@ -215,7 +263,7 @@ While True
 			If FileExists($listfle) Then Run($notepad & $listfle)
 		Case $msg = $Wipe_item
 			; Clear The Log
-			_FileCreate($logfle)
+			If FileExists($logfle) Then _FileCreate($logfle)
 		Case $msg = $Stop_item
 			; Add a 'stop' entry at list end
 			$timestamp = _NowCalc()
@@ -225,7 +273,7 @@ While True
 			FileWriteLine($listfle, "stop " & $timestamp)
 		Case $msg = $Clear_item
 			; Clear The List
-			_FileCreate($listfle)
+			If FileExists($listfle) Then _FileCreate($listfle)
 		Case Else
 	EndSelect
 WEnd
@@ -238,14 +286,14 @@ Func ImitationConsoleGUI($start)
 	Local $Checkbox_kill, $Checkbox_list, $Checkbox_pdf, $Checkbox_rar, $Checkbox_results, $Checkbox_save, $Checkbox_send
 	Local $Checkbox_sh, $Checkbox_show, $Checkbox_shutdown, $Checkbox_stay, $Checkbox_slash, $Checkbox_stop, $Checkbox_zip
 	Local $Edit_console, $Graphic_base, $Graphic_end, $Graphic_top, $Group_console, $Group_done, $Group_job, $Group_jobs
-	Local $Input_job, $Input_jobs,$Input_path, $Input_title
-	Local $Label_check, $Label_job, $Label_path, $Label_size, $Label_state, $Label_status, $Label_title
-	Local $List_done, $List_jobs
+	Local $Input_job, $Input_jobs,$Input_path, $Input_title, $Item_clear, $Item_open, $Item_show, $Item_stop, $Item_view
+	Local $Label_advice, $Label_check, $Label_job, $Label_options, $Label_path, $Label_size, $Label_state, $Label_status
+	Local $Label_title, $List_done, $List_jobs, $Menu_done, $Menu_jobs
 	;
-	Local $a, $beep, $cancel, $close, $ConsoleGUI, $create, $doimg, $dopdf, $dorar, $dosh, $dozip, $duration, $err, $errors
-	Local $exit, $frequency, $height, $image, $ind, $irfanfold, $j, $job, $line, $list, $ontop, $o, $out, $output, $passed
-	Local $pid, $pth, $rar, $resfile, $resfold, $results, $ret, $save, $send, $show, $shutdown, $shutoptions, $shutwarn
-	Local $skipped, $slash, $stay, $type, $width, $zip
+	Local $a, $beep, $cancel, $close, $ConsoleGUI, $create, $doimg, $dopdf, $dorar, $dosh, $dozip, $duration, $entry, $err
+	Local $errors, $exit, $frequency, $height, $image, $ind, $irfanfold, $j, $job, $line, $list, $ontop, $o, $out, $output
+	Local $passed, $pid, $pth, $rar, $resfile, $resfold, $results, $ret, $save, $send, $show, $shutdown, $shutoptions
+	Local $shutwarn, $skipped, $slash, $stay, $type, $width, $zip
 	;
 	$shutdown = IniRead($inifle, "After Downloads", "shutdown", "")
 	If $shutdown = "" Then
@@ -300,11 +348,17 @@ Func ImitationConsoleGUI($start)
 	$List_jobs = GUICtrlCreateList("", 20, 115, 670, 65, $WS_BORDER + $WS_VSCROLL)
 	GUICtrlSetBkColor($List_jobs, 0xFFCEE7)
 	GUICtrlSetTip($List_jobs, "Files waiting to be tested!")
+	$Label_options = GUICtrlCreateLabel("Right-click here to see some options.", 30, 135, 650, 20, $SS_CENTER + $SS_CENTERIMAGE)
+	GUICtrlSetBkColor($Label_options, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetFont($Label_options, 9, 600)
 	;
 	$Group_done = GUICtrlCreateGroup("Jobs Done", 10, 200, 690, 95)
 	$List_done = GUICtrlCreateList("", 20, 220, 670, 65, $WS_BORDER + $WS_VSCROLL)
 	GUICtrlSetBkColor($List_done, 0xFFFFB7)
 	GUICtrlSetTip($List_done, "Files that have completed testing!")
+	$Label_advice = GUICtrlCreateLabel("See right-click options here when testing finished.", 30, 240, 650, 20, $SS_CENTER + $SS_CENTERIMAGE)
+	GUICtrlSetBkColor($Label_advice, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetFont($Label_advice, 9, 600)
 	;
 	$Group_console = GUICtrlCreateGroup("DOS CMD Console Ouput", 10, 305, 690, 180)
 	$Edit_console = GUICtrlCreateEdit("", 20, 325, 670, 145, $ES_MULTILINE + $ES_WANTRETURN + $ES_READONLY + $WS_VSCROLL)
@@ -356,7 +410,7 @@ Func ImitationConsoleGUI($start)
 	$Checkbox_exe = GUICtrlCreateCheckbox("EXE", 237, 537, 40, 18)
 	GUICtrlSetTip($Checkbox_exe, "EXEcutable files (InnoSetup ones only)!")
 	$Checkbox_zip = GUICtrlCreateCheckbox("ZIP", 283, 537, 40, 18)
-	GUICtrlSetTip($Checkbox_zip, "Compressed files (ZIP, 7Z, BZ2, GZ, PK4, MSI only)!")
+	GUICtrlSetTip($Checkbox_zip, "Compressed files (ZIP, 7Z, BZ2, GZ, XZ, PK4, MSI, ISO only)!")
 	$Checkbox_rar = GUICtrlCreateCheckbox("RAR", 326, 537, 40, 18)
 	GUICtrlSetTip($Checkbox_rar, "Compressed file (RAR only)!")
 	$Checkbox_sh = GUICtrlCreateCheckbox("SH", 373, 537, 35, 18)
@@ -391,10 +445,31 @@ Func ImitationConsoleGUI($start)
 	$Checkbox_send = GUICtrlCreateCheckbox("Send to 'Results' folder", 575, 560, 125, 20)
 	GUICtrlSetTip($Checkbox_send, "Send 'Results.txt' files to the 'Results' folder!")
 	;
+	; CONTEXT MENU
+	$Menu_jobs = GUICtrlCreateContextMenu($List_jobs)
+	$Item_clear = GUICtrlCreateMenuItem("Clear the Job List", $Menu_jobs)
+	GUICtrlCreateMenuItem("", $Menu_jobs)
+	$Item_show = GUICtrlCreateMenuItem("View the Job List", $Menu_jobs)
+	GUICtrlCreateMenuItem("", $Menu_jobs)
+	GUICtrlCreateMenuItem("", $Menu_jobs)
+	$Item_stop = GUICtrlCreateMenuItem("Add a 'stop' entry", $Menu_jobs)
+	;
+	$Menu_done = GUICtrlCreateContextMenu($List_done)
+	$Item_open = GUICtrlCreateMenuItem("Open Item Folder", $Menu_done)
+	GUICtrlCreateMenuItem("", $Menu_done)
+	$Item_view = GUICtrlCreateMenuItem("View Item Results", $Menu_done)
+	;
 	; SETTINGS
 	$close = ""
 	$shutoptions = "none|Shutdown|Hibernate|Standby|Powerdown|Logoff"
+	;
+	GUICtrlSetState($Item_open, $GUI_DISABLE)
+	GUICtrlSetState($Item_view, $GUI_DISABLE)
 	If $start = 1 Then
+		GUICtrlSetData($Label_options, "")
+		GUICtrlSetState($Item_clear, $GUI_DISABLE)
+		GUICtrlSetState($Item_show, $GUI_DISABLE)
+		GUICtrlSetState($Item_stop, $GUI_DISABLE)
 		If $shutdown <> "none" Then
 			$ans = MsgBox(262195, "Shutdown Alert", _
 				"A shutdown option is currently enabled." & @LF & @LF & _
@@ -479,9 +554,9 @@ Func ImitationConsoleGUI($start)
 			GUICtrlSetState($Checkbox_sh, $dosh)
 		Else
 			GUICtrlSetState($Checkbox_zip, $GUI_DISABLE)
-			If $dozip = 1 Then MsgBox(262192, "Program Error", "7-Zip (7za.exe) is Required for ZIP files and is missing!", 0, $DropboxGUI)
+			If $dozip = 1 Then MsgBox(262192, "Program Error", "7-Zip (7z.exe) is Required for ZIP files and is missing!", 0, $DropboxGUI)
 			GUICtrlSetState($Checkbox_sh, $GUI_DISABLE)
-			If $dosh = 1 Then MsgBox(262192, "Program Error", "7-Zip (7za.exe) is Required for SH files and is missing!", 0, $DropboxGUI)
+			If $dosh = 1 Then MsgBox(262192, "Program Error", "7-Zip (7z.exe) is Required for SH files and is missing!", 0, $DropboxGUI)
 			GUICtrlSetState($Checkbox_list, $GUI_DISABLE)
 		EndIf
 		;
@@ -627,7 +702,7 @@ Func ImitationConsoleGUI($start)
 				"available online. The 'innoextract.exe' file needs to exist in the" & @LF & _
 				"same folder (directory) as this program." & @LF & @LF & _
 				"The program also requires '7-Zip' to do the testing of ZIP files," & @LF & _
-				"which is freely available online. The '7za.exe' file needs to exist" & @LF & _
+				"which is freely available online. The '7z.exe' file needs to exist" & @LF & _
 				"in a '7-Zip' content folder, in the same folder as this program." & @LF & @LF & _
 				"Program also requires 'UnRAR' to do the testing of RAR files," & @LF & _
 				"which is freely available online. 'UnRAR.exe' file needs to exist" & @LF & _
@@ -648,7 +723,7 @@ Func ImitationConsoleGUI($start)
 				"When an EXE file is tested, all companion BIN files are tested as" & @LF & _
 				"well. For each main file, a '%name% - Results file' is created. It" & @LF & _
 				"contains the same data as shown in the DOS Console window." & @LF & @LF & _
-				"Click OK to see more information", 0, $ConsoleGUI)
+				"Click OK to see more information.", 0, $ConsoleGUI)
 			If $ans = 1 Then
 				MsgBox(262208, "Program Information", _
 					"A 'Log.txt' file is also written to with a simple result for each file" & @LF & _
@@ -656,7 +731,7 @@ Func ImitationConsoleGUI($start)
 					"just change that setting on the Console window." & @LF & @LF & _
 					"Both the LIST and LOG buttons on the dropbox, have right-click" & @LF & _
 					"'Clear' options, for easy wiping ... or just edit them manually." & @LF & @LF & _
-					"The 'Kill not Close' option, uses 'taskkill.exe' to close '7za.exe' or" & @LF & _
+					"The 'Kill not Close' option, uses 'taskkill.exe' to close '7z.exe' or" & @LF & _
 					"'innoextract.exe' if you stop during testing. It should hopefully" & @LF & _
 					"not be required to close them, and perhaps best avoided." & @LF & @LF & _
 					"During testing, some options can take a while to be responded" & @LF & _
@@ -669,7 +744,7 @@ Func ImitationConsoleGUI($start)
 					"© March 2020 - Created by Timboli. (" & $version & $update & ")", 0, $ConsoleGUI)
 			EndIf
 		Case $msg = $Checkbox_zip
-			; Compressed files (ZIP, 7Z, BZ2, GZ, PK4 only)
+			; Compressed files (ZIP, 7Z, BZ2, GZ, XZ, PK4, MSI, ISO only)
 			If GUICtrlRead($Checkbox_zip) = $GUI_CHECKED Then
 				$dozip = 1
 				GUICtrlSetState($Checkbox_list, $GUI_ENABLE)
@@ -850,6 +925,76 @@ Func ImitationConsoleGUI($start)
 			Else
 				WinSetTitle($ConsoleGUI, "", "GOGPlus Download Checker Console - SHUTDOWN ENABLED")
 			EndIf
+		Case $msg = $Item_view
+			; View Item Results
+			$entry = GUICtrlRead($List_done)
+			If $entry = "" Then
+				MsgBox(262192, "Selection Error", "Select a list entry.", 0, $ConsoleGUI)
+			Else
+				$path = StringReplace($entry, "(PASSED) ", "")
+				$path = StringReplace($path, "(FAILED) ", "")
+				_PathSplit($path, $drv, $dir, $fnam, $fext)
+				$resfile = $drv & $dir & $fnam & $fext & " - Results.txt"
+				If GUICtrlRead($Checkbox_create) = $GUI_CHECKED Then
+					If GUICtrlRead($Checkbox_slash) = $GUI_CHECKED Then
+						$resfold = $drv & $dir & "_Results"
+					Else
+						$resfold = $drv & $dir & "Results"
+					EndIf
+					If GUICtrlRead($Checkbox_send) = $GUI_CHECKED Then
+						If FileExists($resfold) Then $resfile = $resfold & "\" & $fnam & $fext & " - Results.txt"
+					EndIf
+				EndIf
+				If FileExists($resfile) Then
+					If GUICtrlRead($Button_ontop) = $GUI_CHECKED Then
+						WinSetOnTop($ConsoleGUI, "", 0)
+						$ontop = 4
+						GUICtrlSetState($Button_ontop, $ontop)
+					EndIf
+					ShellExecute($resfile)
+				EndIf
+			EndIf
+		Case $msg = $Item_stop
+			; Add a 'stop' entry at list end
+			If FileExists($listfle) Then
+				$timestamp = _NowCalc()
+				$timestamp = StringReplace($timestamp, ":", "")
+				$timestamp = StringReplace($timestamp, "/", "")
+				$timestamp = StringStripWS($timestamp, 8)
+				FileWriteLine($listfle, "stop " & $timestamp)
+			EndIf
+		Case $msg = $Item_show
+			; View the Job List
+			If FileExists($listfle) Then
+				If GUICtrlRead($Button_ontop) = $GUI_CHECKED Then
+					WinSetOnTop($ConsoleGUI, "", 0)
+					$ontop = 4
+					GUICtrlSetState($Button_ontop, $ontop)
+				EndIf
+				Run($notepad & $listfle)
+			EndIf
+		Case $msg = $Item_open
+			; Open Item Folder
+			$entry = GUICtrlRead($List_done)
+			If $entry = "" Then
+				MsgBox(262192, "Selection Error", "Select a list entry.", 0, $ConsoleGUI)
+			Else
+				$path = StringReplace($entry, "(PASSED) ", "")
+				$path = StringReplace($path, "(FAILED) ", "")
+				_PathSplit($path, $drv, $dir, $fnam, $fext)
+				$path = StringTrimRight($drv & $dir, 1)
+				If FileExists($path) Then
+					If GUICtrlRead($Button_ontop) = $GUI_CHECKED Then
+						WinSetOnTop($ConsoleGUI, "", 0)
+						$ontop = 4
+						GUICtrlSetState($Button_ontop, $ontop)
+					EndIf
+					ShellExecute($path)
+				EndIf
+			EndIf
+		Case $msg = $Item_clear
+			; Clear the Job List
+			If FileExists($listfle) Then _FileCreate($listfle)
 		Case Else
 			If $start = 1 Then
 				GUICtrlSetState($Button_info, $GUI_DISABLE)
@@ -859,6 +1004,9 @@ Func ImitationConsoleGUI($start)
 				IniWrite($inifle, "Testing", "started", _Now())
 				;
 				$irfanfold = StringTrimRight($irfanview, 13)
+				;
+				Sleep(2000)
+				GUICtrlSetData($Label_advice, "")
 				;
 				$errors = 0
 				$job = 0
@@ -948,9 +1096,180 @@ Func ImitationConsoleGUI($start)
 													ElseIf StringInStr($out, "Done") > 0 Then
 														If StringInStr($out, " error.") > 0 Or StringInStr($out, " error ") > 0 Then
 															If $out <> "" Then $results &= $out
-															$err = 2
+															;$err = 2
 															;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
-															ExitLoop
+															;ExitLoop
+															If StringInStr($results, "Not a supported Inno Setup installer!") > 0 Then
+																$out = @CRLF & "Now testing with 7z.exe instead." & @CRLF & "..." & @CRLF
+																$results &= $out
+																_GUICtrlEdit_AppendText($Edit_console, $out)
+																Sleep(2000)
+																;GUICtrlSetData($Edit_console, "")
+																;
+																$result = ""
+																;$text = ""
+																$zip = ""
+																If $zipcheck = 1 Then
+																	$zip = 1
+																	FileChangeDir(@ScriptDir & "\7-Zip")
+																	$ret = Run('7z.exe t -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+																	$pid = $ret
+																	;$line = 0
+																	While 1
+																		$out = StdoutRead($ret)
+																		If @error Then
+																			; Exit the loop if the process closes or StdoutRead returns an error.
+																			; NOTE - If process closes without error, then two Exitloops should occur, without getting an error $val.
+																			While 1
+																				$out = StderrRead($ret)
+																				If @error Then
+																					; Exit the loop if the process closes or StderrRead returns an error.
+																					ExitLoop
+																				EndIf
+																				;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+																				$err = 1
+																				_GUICtrlEdit_AppendText($Edit_console, @CRLF & $out)
+																				_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+																			WEnd
+																			;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+																			If $out <> "" Then $results &= $out
+																			ExitLoop
+																		Else
+																			If $out <> "" Then
+																				$output = StringSplit($out, @CR, 1)
+																				For $o = 1 To $output[0]
+																					$out = $output[$o]
+																					$out = StringStripWS($out, 7)
+																					If $out <> "" Then
+																						$out = $out & @CRLF
+																						_GUICtrlEdit_AppendText($Edit_console, $out)
+																						_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+																						If StringInStr($out, "Everything is Ok") > 0 Then
+																							$result = "good"
+																							;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+																							;ExitLoop 2
+																						EndIf
+																						$results &= $out
+																						$line = $line + 1
+																						If $line = 25 Then
+																							$text = $results & "###### SEE THE '" & $fnam & " - Results.txt' FILE FOR FULL DETAIL ######" & @CRLF
+																							_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+																						ElseIf $line = 50 Then
+																							GUICtrlSetData($Edit_console, $text)
+																							$line = 26
+																							_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+																						EndIf
+																					EndIf
+																				Next
+																			EndIf
+																		EndIf
+																		If GUICtrlRead($Checkbox_during) = $GUI_CHECKED Then
+																			$cancel = 1
+																			GUICtrlSetState($Checkbox_during, $GUI_UNCHECKED)
+																			$ans = MsgBox(33 + 262144 + 256, "Stop Query", _
+																			   "Do you really want to cancel processing" & @LF & _
+																			   "right NOW, before the current job has" & @LF & _
+																			   "fully completed?" & @LF & @LF & _
+																			   "OK = STOP NOW." & @LF & _
+																			   "CANCEL = Let current job finish first.", 0, $ConsoleGUI)
+																			If $ans = 1 Then
+																				; Quit or Exit testing
+																				If GUICtrlRead($Checkbox_kill) = $GUI_CHECKED Then
+																					Run(@SystemDir & '\taskkill.exe /IM "' & $pid & '" /T /F', @SystemDir, @SW_HIDE)
+																				Else
+																					ProcessClose($pid)
+																				EndIf
+																				$cancel = 1
+																				ExitLoop 3
+																			ElseIf $ans = 2 Then
+																				; Leave until current job finished
+																				GUICtrlSetState($Checkbox_stop, $GUI_CHECKED)
+																			EndIf
+																		EndIf
+																	Wend
+																	If $result = "good" And GUICtrlRead($Checkbox_list) = $GUI_CHECKED Then
+																		Sleep(2000)
+																		FileChangeDir(@ScriptDir & "\7-Zip")
+																		$ret = Run('7z.exe l -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+																		$pid = $ret
+																		$line = 0
+																		While 1
+																			$out = StdoutRead($ret)
+																			If @error Then
+																				; Exit the loop if the process closes or StdoutRead returns an error.
+																				; NOTE - If process closes without error, then two Exitloops should occur, without getting an error $val.
+																				While 1
+																					$out = StderrRead($ret)
+																					If @error Then
+																						; Exit the loop if the process closes or StderrRead returns an error.
+																						ExitLoop
+																					EndIf
+																					;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+																					$err = 1
+																					_GUICtrlEdit_AppendText($Edit_console, @CRLF & $out)
+																					_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+																				WEnd
+																				If $out <> "" Then $results &= $out
+																				ExitLoop
+																			Else
+																				If $out <> "" Then
+																					$output = StringSplit($out, @CR, 1)
+																					For $o = 1 To $output[0]
+																						$out = $output[$o]
+																						$out = StringStripWS($out, 7)
+																						If $out <> "" Then
+																							$out = $out & @CRLF
+																							_GUICtrlEdit_AppendText($Edit_console, $out)
+																							_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+																							$results &= $out
+																							$line = $line + 1
+																							If $line = 25 Then
+																								$text = $results & "###### SEE THE '" & $fnam & " - Results.txt' FILE FOR FULL DETAIL ######" & @CRLF
+																								_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+																							ElseIf $line = 50 Then
+																								GUICtrlSetData($Edit_console, $text)
+																								$line = 26
+																								_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+																							EndIf
+																						EndIf
+																					Next
+																					$reached = _GUICtrlEdit_GetTextLen($Edit_console)
+																					IniWrite($inifle, "Edit Control Text", "count", $reached)
+																				EndIf
+																			EndIf
+																			If GUICtrlRead($Checkbox_during) = $GUI_CHECKED Then
+																				$cancel = 1
+																				GUICtrlSetState($Checkbox_during, $GUI_UNCHECKED)
+																				$ans = MsgBox(33 + 262144 + 256, "Stop Query", _
+																				   "Do you really want to cancel processing" & @LF & _
+																				   "right NOW, before the current job has" & @LF & _
+																				   "fully completed?" & @LF & @LF & _
+																				   "OK = STOP NOW." & @LF & _
+																				   "CANCEL = Let current job finish first.", 0, $ConsoleGUI)
+																				If $ans = 1 Then
+																					; Quit or Exit testing
+																					If GUICtrlRead($Checkbox_kill) = $GUI_CHECKED Then
+																						Run(@SystemDir & '\taskkill.exe /IM "' & $pid & '" /T /F', @SystemDir, @SW_HIDE)
+																					Else
+																						ProcessClose($pid)
+																					EndIf
+																					$cancel = 1
+																					ExitLoop 3
+																				ElseIf $ans = 2 Then
+																					; Leave until current job finished
+																					GUICtrlSetState($Checkbox_stop, $GUI_CHECKED)
+																				EndIf
+																			EndIf
+																		Wend
+																	ElseIf $result <> "good" Then
+																		$err = 2
+																	EndIf
+																	ExitLoop 2
+																EndIf
+															Else
+																$err = 2
+																ExitLoop
+															EndIf
 														EndIf
 													EndIf
 													$results &= $out
@@ -999,9 +1318,9 @@ Func ImitationConsoleGUI($start)
 									$zip = 1
 									FileChangeDir(@ScriptDir & "\7-Zip")
 									If $fext = ".msi" Then
-									   $ret = Run('7za.exe t -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+									   $ret = Run('7z.exe t -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 									Else
-										$ret = Run('7za.exe t -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+										$ret = Run('7z.exe t -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 									EndIf
 									$pid = $ret
 									$line = 0
@@ -1079,9 +1398,9 @@ Func ImitationConsoleGUI($start)
 										Sleep(2000)
 										FileChangeDir(@ScriptDir & "\7-Zip")
 										If $fext = ".msi" Then
-											$ret = Run('7za.exe l -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+											$ret = Run('7z.exe l -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 										Else
-											$ret = Run('7za.exe l -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+											$ret = Run('7z.exe l -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 										EndIf
 										$pid = $ret
 										$line = 0
@@ -1238,12 +1557,13 @@ Func ImitationConsoleGUI($start)
 								Else
 									$err = 4
 								EndIf
-							ElseIf ($fext = ".zip" Or $fext = ".7z" Or $fext = ".bz2" Or $fext = ".gz" Or $fext = ".pk4") And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED Then
+							ElseIf ($fext = ".zip" Or $fext = ".7z" Or $fext = ".bz2" Or $fext = ".gz" Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".iso") _
+								And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED Then
 								GetFileSize()
 								If $zipcheck = 1 Then
 									$zip = 1
 									FileChangeDir(@ScriptDir & "\7-Zip")
-									$ret = Run('7za.exe t "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+									$ret = Run('7z.exe t "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 									$pid = $ret
 									$line = 0
 									While 1
@@ -1319,7 +1639,7 @@ Func ImitationConsoleGUI($start)
 									If $result = "good" And GUICtrlRead($Checkbox_list) = $GUI_CHECKED Then
 										Sleep(2000)
 										FileChangeDir(@ScriptDir & "\7-Zip")
-										$ret = Run('7za.exe l "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+										$ret = Run('7z.exe l "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 										$pid = $ret
 										$line = 0
 										While 1
@@ -1697,6 +2017,12 @@ Func ImitationConsoleGUI($start)
 					Else
 						$show = 4
 					EndIf
+				Else
+					GUICtrlSetState($Item_clear, $GUI_ENABLE)
+					GUICtrlSetState($Item_show, $GUI_ENABLE)
+					GUICtrlSetState($Item_stop, $GUI_ENABLE)
+					GUICtrlSetState($Item_open, $GUI_ENABLE)
+					GUICtrlSetState($Item_view, $GUI_ENABLE)
 				EndIf
 				;MsgBox(262144 + 64, "Text", $text & " - " & $line, 0, $ConsoleGUI)
 			EndIf
@@ -1746,7 +2072,8 @@ Func AddFileToList()
 	_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 	;If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".pdf" _
 	;	Or $fext = ".jpg" Or $fext = ".jpeg" Or $fext = ".png" Or $fext = ".bmp" Or $fext = ".tiff" Or $fext = ".gif" Then
-	If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Then
+	If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
+		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" Then
 		If Not FileExists($listfle) Then _FileCreate($listfle)
 		FileWriteLine($listfle, $srcfle)
 		_FileReadToArray($listfle, $array)
@@ -1755,9 +2082,11 @@ Func AddFileToList()
 		$array = _ArrayToString($array, @CRLF, 2)
 		FileWrite($listfle, $array & @CRLF)
 	Else
-		MsgBox(262192, "File Error", "Only BZ2, EXE, GZ, MSI, PDF, PK4, RAR, SH, ZIP, 7Z are currently supported!" & @LF _
-			& @LF & "BIN files however, may be supported via their associated EXE file," _
-			& @LF & "which should be the case with InnoSetup files (i.e. from GOG).", 0, $DropboxGUI)
+		MsgBox(262192, "File Error", "Only the following (mostly archive) files are currently supported." & @LF _
+			& @LF & "7Z, BZ2, EXE, GZ, ISO, MSI, PDF, PK4, RAR, SH, XZ, ZIP" & @LF _
+			& @LF & "BIN (not directly, only indirectly)" & @LF _
+			& @LF & "BIN files from GOG, should be supported via their associated EXE" _
+			& @LF & "file, as is usually the case with InnoSetup files (used by GOG).", 0, $DropboxGUI)
 		;MsgBox(262192, "File Error", "Only BMP & BZ2 & EXE & GIF & JPEG & JPG & PDF & PNG & RAR & SH & TIFF & ZIP & 7Z are supported!", 0, $DropboxGUI)
 	EndIf
 	;

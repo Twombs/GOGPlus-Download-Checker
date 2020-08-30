@@ -10,7 +10,7 @@ InnoExtract, required for testing the EXE (and companion BIN) files, can be foun
 (https://constexpr.org/innoextract/files/innoextract-1.8-windows.zip)
 The 'innoextract.exe' file and any dependencies, need to share the same folder as my program.
 
-7-Zip, required for ZIP & 7Z & BZ2 & SH files, is free and can be obtained from here - https://www.7-zip.org/
+7-Zip, required for ZIP & 7Z & BZ2 & SH etc files, is free and can be obtained from here - https://www.7-zip.org/
 (https://www.7-zip.org/a/7z1900.exe)
 If you don't wish to install it, you can grab the 7-Zip Extra: standalone console version, from here - https://www.7-zip.org/download.html
 (https://www.7-zip.org/a/7z1900-extra.7z)

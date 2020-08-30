@@ -13,3 +13,8 @@
 (v1.7) GZ files now supported using 7-Zip. Added the recognition of a line in the batch list starting with the word - stop, which the program will stop checking at. NOTE - This means the ability to have only a portion of the list processed, stopping at a pre-determined location or point. This is a handy option with a large list or before large files that take a long time to process. It essentially means you can load a list, and process it in segments. IMPORTANT - To use multiple 'stop' lines in the list, then each must be unique, like having a trailing number or any text really (i.e. stop 1 or stop 2 or stop here etc). The LIST button on the dropbox has an extra right-click option to get the program to create a 'stop' entry for you, with a trailing timestamp to make it unique.
 
 (v1.8) MSI files now supported using 7-Zip.
+
+(v1.9) If an EXE file fails with InnoExtract, then an attempt at checking with 7-Zip occurs.
+
+(v2.0) BUGFIX for EXE files that fail with InnoExtract. To give broader EXE file support, 7z.exe is now used instead of 7za.exe. XZ and ISO archive files are now supported. Done list has two right-click options, accessible when all testing complete, and window is set to stay open (or on error). Jobs list has three right-click options, accessible after testing or when viewing program options. Program now has its own icon. Drag & drop of one or more folders is now supported for all the supported file types (pdf excluded).
+
