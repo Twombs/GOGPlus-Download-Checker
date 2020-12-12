@@ -66,8 +66,8 @@ $notepad = @WindowsDir & "\Notepad.exe "
 $qpdf = @ScriptDir & "\QPDF\bin\qpdf.exe"
 $target = @LF & "Drag && Drop" & @LF & "Downloaded" & @LF & "Game Files" & @LF & "HERE"
 $unrar = @ScriptDir & "\UnRAR\UnRAR.exe"
-$update = " June update"
-$version = "v2.0"
+$update = " October update"
+$version = "v2.1"
 
 If Not FileExists($foldpdf) Then DirCreate($foldpdf)
 If Not FileExists($foldrar) Then DirCreate($foldrar)
@@ -152,6 +152,7 @@ While True
 			Local $f, $file, $files, $srcfld
 			$cnt = UBound($gaDropFiles)
 			If $cnt = 1 Then
+				; Single File or Folder dropped
 				$srcfle = @GUI_DragFile
 				$atts = FileGetAttrib($srcfle)
 				If StringInStr($atts, "D") > 0 Then
@@ -174,9 +175,31 @@ While True
 						MsgBox(262192, "Source Error", "Files couldn't be returned!", 0, $DropboxGUI)
 					EndIf
 				Else
-					AddFileToList()
+					_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
+					If $fext = ".bin" Then
+						$ans = MsgBox(262195, "Process Query", _
+							"You have passed a BIN file. Usually this program" & @LF &  _
+							"processes a BIN file, as part of a GOG based EXE" & @LF & _
+							"companion file, not as an individual file." & @LF & @LF & _
+							"Do you want to process the file with 7-Zip?" & @LF & @LF & _
+							"YES = Continue (use 7-Zip)." & @LF & _
+							"NO = Continue (use UnRAR)." & @LF & _
+							"CANCEL = Abort checking.", 0, $DropboxGUI)
+						If $ans = 6 Then
+							$fext = ".bin-ZIP"
+							$srcfle = $srcfle & "-ZIP"
+							AddFileToList()
+						ElseIf $ans = 7 Then
+							$fext = ".bin-RAR"
+							$srcfle = $srcfle & "-RAR"
+							AddFileToList()
+						EndIf
+					Else
+						AddFileToList()
+					EndIf
 				EndIf
 			Else
+				; Multiple Files &/or Folders dropped
 				For $g = 0 To $cnt - 1
 					$srcfle = $gaDropFiles[$g]
 					$atts = FileGetAttrib($srcfle)
@@ -201,6 +224,7 @@ While True
 							MsgBox(262192, "Source Error", "Files couldn't be returned!", 2, $DropboxGUI)
 						EndIf
 					Else
+						_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 						AddFileToList()
 					EndIf
 				Next
@@ -1014,6 +1038,15 @@ Func ImitationConsoleGUI($start)
 				For $j = 1 To $array[0]
 					$path = $array[$j]
 					If $path <> "" And StringLeft($path, 4) <> "stop" Then
+						If StringRight($path, 8) = ".bin-ZIP" Then
+							$app = "ZIP"
+							$path = StringTrimRight($path, 4)
+						ElseIf StringRight($path, 8) = ".bin-RAR" Then
+							$app = "RAR"
+							$path = StringTrimRight($path, 4)
+						Else
+							$app = ""
+						EndIf
 						If FileExists($path) Then
 							_FileWriteLog($logfle, "Checking = " & $path)
 							$job = $job + 1
@@ -1312,13 +1345,16 @@ Func ImitationConsoleGUI($start)
 										EndIf
 									EndIf
 								Wend
-							ElseIf ($fext = ".msi" And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED) Or ($fext = ".sh" And GUICtrlRead($Checkbox_sh) = $GUI_CHECKED) Then
+							ElseIf ($fext = ".msi" And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED) Or ($fext = ".sh" And GUICtrlRead($Checkbox_sh) = $GUI_CHECKED) _
+								Or ($fext = ".bin" And $app = "ZIP" And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED) Then
 								GetFileSize()
 								If $zipcheck = 1 Then
 									$zip = 1
 									FileChangeDir(@ScriptDir & "\7-Zip")
 									If $fext = ".msi" Then
 									   $ret = Run('7z.exe t -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+									ElseIf $fext = ".bin" Then
+									   $ret = Run('7z.exe t -r -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 									Else
 										$ret = Run('7z.exe t -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 									EndIf
@@ -1399,6 +1435,8 @@ Func ImitationConsoleGUI($start)
 										FileChangeDir(@ScriptDir & "\7-Zip")
 										If $fext = ".msi" Then
 											$ret = Run('7z.exe l -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+										ElseIf $fext = ".bin" Then
+											$ret = Run('7z.exe l -r -t# "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 										Else
 											$ret = Run('7z.exe l -tzip "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 										EndIf
@@ -1476,7 +1514,8 @@ Func ImitationConsoleGUI($start)
 								Else
 									$err = 3
 								EndIf
-							ElseIf $fext = ".rar" And GUICtrlRead($Checkbox_rar) = $GUI_CHECKED Then
+							;ElseIf $fext = ".rar" And GUICtrlRead($Checkbox_rar) = $GUI_CHECKED Then
+							ElseIf ($fext = ".rar" Or ($fext = ".bin" And $app = "RAR")) And GUICtrlRead($Checkbox_rar) = $GUI_CHECKED Then
 								GetFileSize()
 								If $rarcheck = 1 Then
 									$rar = 1
@@ -1889,6 +1928,11 @@ Func ImitationConsoleGUI($start)
 								If ($err = "" And $cancel = "") And ($fext = ".exe" Or ($result = "good" And ($zip = 1 Or $rar = 1 Or $pdf = 1 Or $image = 1))) Then
 									$passed = "(PASSED) "
 									_FileWriteLog($logfle, $passed & $path)
+									If $app = "ZIP" Then
+										$path = $path & "-ZIP"
+									ElseIf $app = "RAR" Then
+										$path = $path & "-RAR"
+									EndIf
 									_ReplaceStringInFile($listfle, $path & @CRLF, "")
 								Else
 									$errors = $errors + 1
@@ -2069,11 +2113,12 @@ Func AddFileToList()
 	GUICtrlSetState($Button_log, $GUI_DISABLE)
 	GUICtrlSetState($Button_opts, $GUI_DISABLE)
 	;
-	_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
+	;_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 	;If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".pdf" _
 	;	Or $fext = ".jpg" Or $fext = ".jpeg" Or $fext = ".png" Or $fext = ".bmp" Or $fext = ".tiff" Or $fext = ".gif" Then
 	If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
-		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" Then
+		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" _
+		Or $fext = ".bin-ZIP" Or $fext = ".bin-RAR" Then
 		If Not FileExists($listfle) Then _FileCreate($listfle)
 		FileWriteLine($listfle, $srcfle)
 		_FileReadToArray($listfle, $array)
