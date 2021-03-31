@@ -19,3 +19,5 @@
 (v2.0) BUGFIX for EXE files that fail with InnoExtract. To give broader EXE file support, 7z.exe is now used instead of 7za.exe. XZ and ISO archive files are now supported. Done list has two right-click options, accessible when all testing complete, and window is set to stay open (or on error). Jobs list has three right-click options, accessible after testing or when viewing program options. Program now has its own icon. Drag & drop of one or more folders is now supported for all the supported file types (pdf excluded).
 
 (v2.1) Added support for single BIN file checking, with a choice of either 7-Zip or UnRAR.
+
+(v2.2) Added support for adding other file types, that the user can input via a right-click menu option of the 'Options' button. These will be tested with 7-Zip, and may or may not supported.

@@ -31,12 +31,13 @@
 _Singleton("gog-plus-downloads-timboli")
 
 Global $Button_list, $Button_log, $Button_opts, $Button_start, $Input_size, $Label_drop
-Global $List_menu, $Log_menu, $Clear_item, $Stop_item, $Wipe_item
+Global $List_menu, $Log_menu, $Opts_menu, $Add_item, $Clear_item, $Remove_item, $Stop_item, $View_item, $Wipe_item
 
-Global $7zip, $array, $atts, $boxcol, $cnt, $dir, $DropboxGUI, $drv, $fext, $fnam, $foldpdf, $foldrar
-Global $foldzip, $imgcheck, $inifle, $innoextract, $irfanview, $left, $listfle, $logfle, $notepad
-Global $path, $pdf, $pdfcheck, $qpdf, $rarcheck, $size, $srcfle, $start, $style, $target, $text
-Global $textcol, $timestamp, $top, $tot, $unrar, $update, $version, $zipcheck
+Global $7zip, $array, $atts, $boxcol, $cnt, $dir, $DropboxGUI, $drv, $e, $envpth, $envvar, $ext, $fext
+Global $fexts, $fnam, $foldpdf, $foldrar, $foldzip, $imgcheck, $inifle, $innoextract, $irfanview, $left
+Global $listfle, $logfle, $notepad, $path, $pdf, $pdfcheck, $qpdf, $rarcheck, $size, $srcfle, $start
+Global $style, $target, $text, $textcol, $timestamp, $top, $tot, $types, $unrar, $update, $version
+Global $wkdir, $zipcheck
 
 Global $gaDropFiles[1], $hWnd, $lParam, $msgID, $wParam
 ; NOTE - If using older AutoIt, then $WM_DROPFILES = 0x233 may need to be declared.
@@ -66,8 +67,8 @@ $notepad = @WindowsDir & "\Notepad.exe "
 $qpdf = @ScriptDir & "\QPDF\bin\qpdf.exe"
 $target = @LF & "Drag && Drop" & @LF & "Downloaded" & @LF & "Game Files" & @LF & "HERE"
 $unrar = @ScriptDir & "\UnRAR\UnRAR.exe"
-$update = " October update"
-$version = "v2.1"
+$update = " March 2021 update"
+$version = "v2.2"
 
 If Not FileExists($foldpdf) Then DirCreate($foldpdf)
 If Not FileExists($foldrar) Then DirCreate($foldrar)
@@ -78,6 +79,18 @@ If Not FileExists($logfle) Then _FileCreate($logfle)
 If Not FileExists($irfanview) Then
 	$irfanview = IniRead($inifle, "IrfanView", "path", "")
 EndIf
+
+;~ If FileExists($unrar) Then
+;~ 	$envvar = EnvGet("PATH")
+;~ 	EnvSet("PATH", $envvar & ";" & $foldrar & "\")
+;~ 	;EnvSet("PATH", "C:\UnRAR\"& ";" & $envvar)
+;~ 	EnvUpdate()
+;~ 	$envpth = EnvGet("PATH")
+;~ 	;MsgBox(262192, "PATH Environment", $envpth, 0)
+;~ 	$wkdir = $foldrar
+;~ Else
+;~ 	$wkdir = ""
+;~ EndIf
 
 $left = IniRead($inifle, "Program Window", "left", -1)
 $top = IniRead($inifle, "Program Window", "top", -1)
@@ -115,11 +128,24 @@ $Stop_item = GUICtrlCreateMenuItem("Add a 'stop' entry", $List_menu)
 $Log_menu = GUICtrlCreateContextMenu($Button_log)
 $Wipe_item = GUICtrlCreateMenuItem("Clear The Log", $Log_menu)
 ;
+$Opts_menu = GUICtrlCreateContextMenu($Button_opts)
+$Add_item = GUICtrlCreateMenuItem("Add File Type", $Opts_menu)
+GUICtrlCreateMenuItem("", $List_menu)
+$Remove_item = GUICtrlCreateMenuItem("Remove File Type", $Opts_menu)
+GUICtrlCreateMenuItem("", $List_menu)
+$View_item = GUICtrlCreateMenuItem("View File Types", $Opts_menu)
+;
 ; SETTINGS
 $boxcol = $COLOR_YELLOW
 $textcol = $COLOR_RED
 GUICtrlSetBkColor($Label_drop, $boxcol)
 GUICtrlSetColor($Label_drop, $textcol)
+;
+$fexts = IniRead($inifle, "File Types", "extra", "")
+If $fexts = "" Then
+	$fexts = "|"
+	IniWrite($inifle, "File Types", "extra", $fexts)
+EndIf
 
 GUIRegisterMsg($WM_DROPFILES, "WM_DROPFILES_FUNC")
 
@@ -146,6 +172,15 @@ While True
 			IniWrite($inifle, "Program Window", "top", $top)
 			;
 			GUIDelete($DropboxGUI)
+			;
+;~ 			If FileExists($unrar) Then
+;~ 				EnvSet("PATH", $envvar)
+;~ 				EnvUpdate()
+;~ 				$envpth = EnvGet("PATH")
+;~ 				;MsgBox(262192, "PATH Environment", $envpth, 0)
+;~ 			EndIf
+			;
+			GUIDelete($DropboxGUI)
 			ExitLoop
 		Case $msg = $GUI_EVENT_DROPPED
 			;MsgBox(262208, "Drop Result", @GUI_DragFile & " was dropped on " & @GUI_DropId, 0, $DropboxGUI)
@@ -156,6 +191,7 @@ While True
 				$srcfle = @GUI_DragFile
 				$atts = FileGetAttrib($srcfle)
 				If StringInStr($atts, "D") > 0 Then
+					; Process Folder Content
 					;MsgBox(262192, "Drop Error", "Folders are not supported!", 0, $DropboxGUI)
 					$srcfld = $srcfle
 					$files = _FileListToArrayRec($srcfld, "*", $FLTAR_FILES, $FLTAR_RECUR, $FLTAR_SORT, $FLTAR_RELPATH)
@@ -167,6 +203,8 @@ While True
 							If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
 								Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
 								AddFileToList()
+							ElseIf StringInStr($fexts, "|" & $fext & "|") > 0 Then
+								AddFileToList()
 							EndIf
 						Next
 					ElseIf @extended = 9 Then
@@ -175,6 +213,7 @@ While True
 						MsgBox(262192, "Source Error", "Files couldn't be returned!", 0, $DropboxGUI)
 					EndIf
 				Else
+					; Process Single File
 					_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 					If $fext = ".bin" Then
 						$ans = MsgBox(262195, "Process Query", _
@@ -204,6 +243,7 @@ While True
 					$srcfle = $gaDropFiles[$g]
 					$atts = FileGetAttrib($srcfle)
 					If StringInStr($atts, "D") > 0 Then
+						; Process Folders
 						;MsgBox(262192, "Drop Error", "Folders are not supported!", 2, $DropboxGUI)
 						;MsgBox(262192, "Drop Error", "Multiple Folders are not supported!", 2, $DropboxGUI)
 						$srcfld = $srcfle
@@ -216,6 +256,8 @@ While True
 								If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
 									Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
 									AddFileToList()
+								ElseIf StringInStr($fexts, "|" & $fext & "|") > 0 Then
+									AddFileToList()
 								EndIf
 							Next
 						ElseIf @extended = 9 Then
@@ -224,6 +266,7 @@ While True
 							MsgBox(262192, "Source Error", "Files couldn't be returned!", 2, $DropboxGUI)
 						EndIf
 					Else
+						; Process Files
 						_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 						AddFileToList()
 					EndIf
@@ -288,6 +331,16 @@ While True
 		Case $msg = $Wipe_item
 			; Clear The Log
 			If FileExists($logfle) Then _FileCreate($logfle)
+		Case $msg = $View_item
+			; View File Types
+			$types = StringTrimLeft($fexts, 1)
+			$types = StringTrimRight($types, 1)
+			$types = StringReplace($types, "|", @LF)
+			If $types = "" Then
+				MsgBox(262208, "Result", "No extra file types found!", 0, $DropboxGUI)
+			Else
+				MsgBox(262208, "Result", "Extra file types found." & @LF & @LF & $types, 0, $DropboxGUI)
+			EndIf
 		Case $msg = $Stop_item
 			; Add a 'stop' entry at list end
 			$timestamp = _NowCalc()
@@ -295,9 +348,51 @@ While True
 			$timestamp = StringReplace($timestamp, "/", "")
 			$timestamp = StringStripWS($timestamp, 8)
 			FileWriteLine($listfle, "stop " & $timestamp)
+		Case $msg = $Remove_item
+			; Remove File Type
+			$types = InputBox("Remove A File Type", "Enter one or more file types (extensions)," & @LF _
+				& "each separated by the pipe '|' character." & @LF & @LF _
+				& "Program defaults are not removable.", "", "", 245, 170, Default, Default, 0, $DropboxGUI)
+			If @error = 0 And $types <> "" Then
+				$ext = StringSplit($types, "|", 1)
+				For $e = 1 To $ext[0]
+					$fext = $ext[$e]
+					$fext = StringStripWS($fext, 8)
+					If $fext <> "" And $fext <> "." Then
+						If StringLeft($fext, 1) <> "." Then $fext = "." & $fext
+						If StringInStr($fexts, "|" & $fext & "|") > 0 Then
+							$fexts = StringReplace($fexts, "|" & $fext & "|", "|")
+							IniWrite($inifle, "File Types", "extra", $fexts)
+						EndIf
+					EndIf
+				Next
+			EndIf
 		Case $msg = $Clear_item
 			; Clear The List
 			If FileExists($listfle) Then _FileCreate($listfle)
+		Case $msg = $Add_item
+			; Add File Type
+			$types = InputBox("Add A File Type", "Enter one or more file types (extensions)," & @LF _
+				& "each separated by the pipe '|' character." & @LF & @LF _
+				& "They will be tested using 7-Zip.", "", "", 245, 170, Default, Default, 0, $DropboxGUI)
+			If @error = 0 And $types <> "" Then
+				$ext = StringSplit($types, "|", 1)
+				For $e = 1 To $ext[0]
+					$fext = $ext[$e]
+					$fext = StringStripWS($fext, 8)
+					If $fext <> "" And $fext <> "." Then
+						If StringLeft($fext, 1) <> "." Then $fext = "." & $fext
+						If $fext <> ".exe" And $fext <> ".rar" And $fext <> ".zip" And $fext <> ".7z" _
+							And $fext <> ".sh" And $fext <> ".bz2" And $fext <> ".gz" And $fext <> ".xz" _
+							And $fext <> ".pk4" And $fext <> ".msi" And $fext <> ".iso" Then
+							If StringInStr($fexts, "|" & $fext & "|") < 1 Then
+								$fexts = $fexts & $fext & "|"
+								IniWrite($inifle, "File Types", "extra", $fexts)
+							EndIf
+						EndIf
+					EndIf
+				Next
+			EndIf
 		Case Else
 	EndSelect
 WEnd
@@ -316,7 +411,7 @@ Func ImitationConsoleGUI($start)
 	;
 	Local $a, $beep, $cancel, $close, $ConsoleGUI, $create, $doimg, $dopdf, $dorar, $dosh, $dozip, $duration, $entry, $err
 	Local $errors, $exit, $frequency, $height, $image, $ind, $irfanfold, $j, $job, $line, $list, $ontop, $o, $out, $output
-	Local $passed, $pid, $pth, $rar, $resfile, $resfold, $results, $ret, $save, $send, $show, $shutdown, $shutoptions
+	Local $param, $passed, $pid, $pth, $rar, $resfile, $resfold, $results, $ret, $save, $send, $show, $shutdown, $shutoptions
 	Local $shutwarn, $skipped, $slash, $stay, $type, $width, $zip
 	;
 	$shutdown = IniRead($inifle, "After Downloads", "shutdown", "")
@@ -750,6 +845,10 @@ Func ImitationConsoleGUI($start)
 				"Click OK to see more information.", 0, $ConsoleGUI)
 			If $ans = 1 Then
 				MsgBox(262208, "Program Information", _
+					"Other file types can be supported (maybe), by adding them with" & @LF & _
+					"the right-click menu option of the 'Options' button. They will be" & @LF & _
+					"processed using 7-Zip, if they can be (no promises). It is strongly" & @LF & _
+					"recommended you test the type separately with 7-Zip first." & @LF & @LF & _
 					"A 'Log.txt' file is also written to with a simple result for each file" & @LF & _
 					"tested. If you wish to disable the creation of the 'Results.txt' files," & @LF & _
 					"just change that setting on the Console window." & @LF & @LF & _
@@ -1091,6 +1190,7 @@ Func ImitationConsoleGUI($start)
 								GetFileSize()
 								;$ret = Run(@ComSpec & ' /k innoextract.exe --test --gog -p on "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 								;$ret = Run(@ComSpec & ' /k innoextract.exe --test --gog "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+								;$ret = Run('innoextract.exe --test --gog "' & $path & '"', $wkdir, @SW_HIDE, $STDERR_MERGED)
 								$ret = Run('innoextract.exe --test --gog "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
 								$pid = $ret
 								$line = 0
@@ -1345,6 +1445,187 @@ Func ImitationConsoleGUI($start)
 										EndIf
 									EndIf
 								Wend
+							ElseIf StringInStr($fexts, "|" & $fext & "|") > 0 And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED Then
+								GetFileSize()
+								If $zipcheck = 1 Then
+									$zip = 1
+									FileChangeDir(@ScriptDir & "\7-Zip")
+									$param = ' -r'
+									While 1
+										$ret = Run('7z.exe t' & $param & ' "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+										$pid = $ret
+										$line = 0
+										While 1
+											$out = StdoutRead($ret)
+											If @error Then
+												; Exit the loop if the process closes or StdoutRead returns an error.
+												; NOTE - If process closes without error, then two Exitloops should occur, without getting an error $val.
+												While 1
+													$out = StderrRead($ret)
+													If @error Then
+														; Exit the loop if the process closes or StderrRead returns an error.
+														ExitLoop
+													EndIf
+													;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+													$err = 1
+													_GUICtrlEdit_AppendText($Edit_console, @CRLF & $out)
+													_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+												WEnd
+												If $out <> "" Then $results &= $out
+												ExitLoop
+											Else
+												If $out <> "" Then
+													$output = StringSplit($out, @CR, 1)
+													For $o = 1 To $output[0]
+														$out = $output[$o]
+														$out = StringStripWS($out, 7)
+														If $out <> "" Then
+															$out = $out & @CRLF
+															_GUICtrlEdit_AppendText($Edit_console, $out)
+															_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+															If StringInStr($out, "Everything is Ok") > 0 Then
+																$result = "good"
+																;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+															EndIf
+															$results &= $out
+															$line = $line + 1
+															If $line = 25 Then
+																$text = $results & "###### SEE THE '" & $fnam & " - Results.txt' FILE FOR FULL DETAIL ######" & @CRLF
+																_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+															ElseIf $line = 50 Then
+																GUICtrlSetData($Edit_console, $text)
+																$line = 26
+																_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+															EndIf
+														EndIf
+													Next
+												EndIf
+											EndIf
+											If GUICtrlRead($Checkbox_during) = $GUI_CHECKED Then
+												$cancel = 1
+												GUICtrlSetState($Checkbox_during, $GUI_UNCHECKED)
+												$ans = MsgBox(33 + 262144 + 256, "Stop Query", _
+												   "Do you really want to cancel processing" & @LF & _
+												   "right NOW, before the current job has" & @LF & _
+												   "fully completed?" & @LF & @LF & _
+												   "OK = STOP NOW." & @LF & _
+												   "CANCEL = Let current job finish first.", 0, $ConsoleGUI)
+												If $ans = 1 Then
+													; Quit or Exit testing
+													If GUICtrlRead($Checkbox_kill) = $GUI_CHECKED Then
+														Run(@SystemDir & '\taskkill.exe /IM "' & $pid & '" /T /F', @SystemDir, @SW_HIDE)
+													Else
+														ProcessClose($pid)
+													EndIf
+													$cancel = 1
+													ExitLoop
+												ElseIf $ans = 2 Then
+													; Leave until current job finished
+													GUICtrlSetState($Checkbox_stop, $GUI_CHECKED)
+												EndIf
+											EndIf
+										Wend
+										If $result = "" Then
+											;MsgBox($MB_SYSTEMMODAL, "Result", $result & @LF & $param, 0, $DropboxGUI)
+											If $param = ' -r' Then
+												$param = ''
+											ElseIf $param = '' Then
+												$param = ' -r -tzip'
+											ElseIf $param = ' -r -tzip' Then
+												$param = ' -tzip'
+											ElseIf $param = ' -tzip' Then
+												$param = ' -r -t#'
+											ElseIf $param = ' -r -t#' Then
+												$param = ' -t#'
+											ElseIf $param = ' -t#' Then
+												$param = ' -r -t*'
+											ElseIf $param = ' -r -t*' Then
+												$param = ' -t*'
+											Else
+												ExitLoop
+											EndIf
+										Else
+											ExitLoop
+										EndIf
+									Wend
+									If $result = "good" And GUICtrlRead($Checkbox_list) = $GUI_CHECKED Then
+										Sleep(2000)
+										FileChangeDir(@ScriptDir & "\7-Zip")
+										$ret = Run('7z.exe l' & $param & ' "' & $path & '"', "", @SW_HIDE, $STDERR_MERGED)
+										$pid = $ret
+										$line = 0
+										While 1
+											$out = StdoutRead($ret)
+											If @error Then
+												; Exit the loop if the process closes or StdoutRead returns an error.
+												; NOTE - If process closes without error, then two Exitloops should occur, without getting an error $val.
+												While 1
+													$out = StderrRead($ret)
+													If @error Then
+														; Exit the loop if the process closes or StderrRead returns an error.
+														ExitLoop
+													EndIf
+													;MsgBox($MB_SYSTEMMODAL, "Stderr Read:", $out)
+													$err = 1
+													_GUICtrlEdit_AppendText($Edit_console, @CRLF & $out)
+													_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+												WEnd
+												If $out <> "" Then $results &= $out
+												ExitLoop
+											Else
+												If $out <> "" Then
+													$output = StringSplit($out, @CR, 1)
+													For $o = 1 To $output[0]
+														$out = $output[$o]
+														$out = StringStripWS($out, 7)
+														If $out <> "" Then
+															$out = $out & @CRLF
+															_GUICtrlEdit_AppendText($Edit_console, $out)
+															_GUICtrlEdit_Scroll($Edit_console, $SB_PAGEDOWN)
+															$results &= $out
+															$line = $line + 1
+															If $line = 25 Then
+																$text = $results & "###### SEE THE '" & $fnam & " - Results.txt' FILE FOR FULL DETAIL ######" & @CRLF
+																_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+															ElseIf $line = 50 Then
+																GUICtrlSetData($Edit_console, $text)
+																$line = 26
+																_GUICtrlEdit_EmptyUndoBuffer($Edit_console)
+															EndIf
+														EndIf
+													Next
+													$reached = _GUICtrlEdit_GetTextLen($Edit_console)
+													IniWrite($inifle, "Edit Control Text", "count", $reached)
+												EndIf
+											EndIf
+											If GUICtrlRead($Checkbox_during) = $GUI_CHECKED Then
+												$cancel = 1
+												GUICtrlSetState($Checkbox_during, $GUI_UNCHECKED)
+												$ans = MsgBox(33 + 262144 + 256, "Stop Query", _
+												   "Do you really want to cancel processing" & @LF & _
+												   "right NOW, before the current job has" & @LF & _
+												   "fully completed?" & @LF & @LF & _
+												   "OK = STOP NOW." & @LF & _
+												   "CANCEL = Let current job finish first.", 0, $ConsoleGUI)
+												If $ans = 1 Then
+													; Quit or Exit testing
+													If GUICtrlRead($Checkbox_kill) = $GUI_CHECKED Then
+														Run(@SystemDir & '\taskkill.exe /IM "' & $pid & '" /T /F', @SystemDir, @SW_HIDE)
+													Else
+														ProcessClose($pid)
+													EndIf
+													$cancel = 1
+													ExitLoop
+												ElseIf $ans = 2 Then
+													; Leave until current job finished
+													GUICtrlSetState($Checkbox_stop, $GUI_CHECKED)
+												EndIf
+											EndIf
+										Wend
+									EndIf
+								Else
+									$err = 3
+								EndIf
 							ElseIf ($fext = ".msi" And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED) Or ($fext = ".sh" And GUICtrlRead($Checkbox_sh) = $GUI_CHECKED) _
 								Or ($fext = ".bin" And $app = "ZIP" And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED) Then
 								GetFileSize()
@@ -2118,7 +2399,7 @@ Func AddFileToList()
 	;	Or $fext = ".jpg" Or $fext = ".jpeg" Or $fext = ".png" Or $fext = ".bmp" Or $fext = ".tiff" Or $fext = ".gif" Then
 	If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
 		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" _
-		Or $fext = ".bin-ZIP" Or $fext = ".bin-RAR" Then
+		Or $fext = ".bin-ZIP" Or $fext = ".bin-RAR" Or StringInStr($fexts, "|" & $fext & "|") > 0 Then
 		If Not FileExists($listfle) Then _FileCreate($listfle)
 		FileWriteLine($listfle, $srcfle)
 		_FileReadToArray($listfle, $array)
@@ -2129,9 +2410,13 @@ Func AddFileToList()
 	Else
 		MsgBox(262192, "File Error", "Only the following (mostly archive) files are currently supported." & @LF _
 			& @LF & "7Z, BZ2, EXE, GZ, ISO, MSI, PDF, PK4, RAR, SH, XZ, ZIP" & @LF _
-			& @LF & "BIN (not directly, only indirectly)" & @LF _
+			& @LF & "BIN (not directly unless separated from the EXE, only indirectly)" & @LF _
 			& @LF & "BIN files from GOG, should be supported via their associated EXE" _
-			& @LF & "file, as is usually the case with InnoSetup files (used by GOG).", 0, $DropboxGUI)
+			& @LF & "file, as is usually the case with InnoSetup files (used by GOG)." & @LF _
+			& @LF & "NOTE - Other file types can be supported (maybe), by adding via" _
+			& @LF & "the right-click menu option of the 'Options' button. They will be" _
+			& @LF & "processed using 7-Zip, if they can be (no promises). It is strongly" _
+			& @LF & "recommended you test the type separately with 7-Zip first.", 0, $DropboxGUI)
 		;MsgBox(262192, "File Error", "Only BMP & BZ2 & EXE & GIF & JPEG & JPG & PDF & PNG & RAR & SH & TIFF & ZIP & 7Z are supported!", 0, $DropboxGUI)
 	EndIf
 	;
