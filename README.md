@@ -12,3 +12,5 @@ Primary file types supported are - EXE (+ BIN), ZIP, 7Z, RAR, BZ2, GZ, PK4, MSI,
 See the Releases links for the v2.2 download.
 
 See the file Notes.txt for my DISCLAIMER, and for links to required third party files and some instructions etc.
+
+![gogplus_console](https://github.com/Twombs/GOGPlus-Download-Checker/blob/master/GOGPlus_console.png?raw=true)
