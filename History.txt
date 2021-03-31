@@ -20,4 +20,4 @@
 
 (v2.1) Added support for single BIN file checking, with a choice of either 7-Zip or UnRAR.
 
-(v2.2) Added support for adding other file types, that the user can input via a right-click menu option of the 'Options' button. These will be tested with 7-Zip, and may or may not supported.
+(v2.2) Added support for adding other file types, that the user can input via a right-click menu option of the 'Options' button. These will be tested with 7-Zip, and may or may not be supported.
