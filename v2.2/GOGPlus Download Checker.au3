@@ -67,8 +67,8 @@ $notepad = @WindowsDir & "\Notepad.exe "
 $qpdf = @ScriptDir & "\QPDF\bin\qpdf.exe"
 $target = @LF & "Drag && Drop" & @LF & "Downloaded" & @LF & "Game Files" & @LF & "HERE"
 $unrar = @ScriptDir & "\UnRAR\UnRAR.exe"
-$update = " February 2022 update"
-$version = "v2.3"
+$update = " March 2021 update"
+$version = "v2.2"
 
 If Not FileExists($foldpdf) Then DirCreate($foldpdf)
 If Not FileExists($foldrar) Then DirCreate($foldrar)
@@ -201,7 +201,7 @@ While True
 							$srcfle = $srcfld & "\" & $file
 							_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 							If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
-								Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Or $fext = ".tar" Then
+								Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
 								AddFileToList()
 							ElseIf StringInStr($fexts, "|" & $fext & "|") > 0 Then
 								AddFileToList()
@@ -254,7 +254,7 @@ While True
 								$srcfle = $srcfld & "\" & $file
 								_PathSplit($srcfle, $drv, $dir, $fnam, $fext)
 								If $fext = ".exe" Or $fext = ".rar" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
-									Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Or $fext = ".tar" Then
+									Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".iso" Then
 									AddFileToList()
 								ElseIf StringInStr($fexts, "|" & $fext & "|") > 0 Then
 									AddFileToList()
@@ -384,7 +384,7 @@ While True
 						If StringLeft($fext, 1) <> "." Then $fext = "." & $fext
 						If $fext <> ".exe" And $fext <> ".rar" And $fext <> ".zip" And $fext <> ".7z" _
 							And $fext <> ".sh" And $fext <> ".bz2" And $fext <> ".gz" And $fext <> ".xz" _
-							And $fext <> ".pk4" And $fext <> ".msi" And $fext <> ".iso" And $fext <> ".tar" Then
+							And $fext <> ".pk4" And $fext <> ".msi" And $fext <> ".iso" Then
 							If StringInStr($fexts, "|" & $fext & "|") < 1 Then
 								$fexts = $fexts & $fext & "|"
 								IniWrite($inifle, "File Types", "extra", $fexts)
@@ -1877,7 +1877,7 @@ Func ImitationConsoleGUI($start)
 								Else
 									$err = 4
 								EndIf
-							ElseIf ($fext = ".zip" Or $fext = ".7z" Or $fext = ".bz2" Or $fext = ".gz" Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".iso" Or $fext = ".tar") _
+							ElseIf ($fext = ".zip" Or $fext = ".7z" Or $fext = ".bz2" Or $fext = ".gz" Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".iso") _
 								And GUICtrlRead($Checkbox_zip) = $GUI_CHECKED Then
 								GetFileSize()
 								If $zipcheck = 1 Then
@@ -2398,7 +2398,7 @@ Func AddFileToList()
 	;If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".pdf" _
 	;	Or $fext = ".jpg" Or $fext = ".jpeg" Or $fext = ".png" Or $fext = ".bmp" Or $fext = ".tiff" Or $fext = ".gif" Then
 	If $fext = ".exe" Or $fext = ".zip" Or $fext = ".7z" Or $fext = ".rar" Or $fext = ".sh" Or $fext = ".bz2" Or $fext = ".gz" _
-		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" Or $fext = ".tar" _
+		Or $fext = ".xz" Or $fext = ".pk4" Or $fext = ".msi" Or $fext = ".pdf" Or $fext = ".iso" _
 		Or $fext = ".bin-ZIP" Or $fext = ".bin-RAR" Or StringInStr($fexts, "|" & $fext & "|") > 0 Then
 		If Not FileExists($listfle) Then _FileCreate($listfle)
 		FileWriteLine($listfle, $srcfle)
@@ -2409,7 +2409,7 @@ Func AddFileToList()
 		FileWrite($listfle, $array & @CRLF)
 	Else
 		MsgBox(262192, "File Error", "Only the following (mostly archive) files are currently supported." & @LF _
-			& @LF & "7Z, BZ2, EXE, GZ, ISO, MSI, PDF, PK4, RAR, SH, TAR, XZ, ZIP" & @LF _
+			& @LF & "7Z, BZ2, EXE, GZ, ISO, MSI, PDF, PK4, RAR, SH, XZ, ZIP" & @LF _
 			& @LF & "BIN (not directly unless separated from the EXE, only indirectly)" & @LF _
 			& @LF & "BIN files from GOG, should be supported via their associated EXE" _
 			& @LF & "file, as is usually the case with InnoSetup files (used by GOG)." & @LF _
