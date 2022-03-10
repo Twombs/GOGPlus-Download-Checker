@@ -9,7 +9,7 @@ This is a partial replacement for the now disabled GOG Downloader, and to be use
 
 Primary file types supported are - EXE (+ BIN), ZIP, 7Z, RAR, BZ2, GZ, PK4, MSI, SH, XZ, ISO, PDF.
 
-See the Releases links for the v2.2 download.
+See the Releases links for the downloads. Latest release is v2.4.
 
 See the file Notes.txt for my DISCLAIMER, and for links to required third party files and some instructions etc.
 
